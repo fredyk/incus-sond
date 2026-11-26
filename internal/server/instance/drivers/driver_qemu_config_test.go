@@ -1246,6 +1246,39 @@ func TestQemuConfigTemplates(t *testing.T) {
 		}
 	})
 
+	// Modified by the Sond project: pin that the sound device needs no SPICE when QEMU lacks it.
+	t.Run("qemu_audio", func(t *testing.T) {
+		testCases := []struct {
+			opts     qemuAudioOpts
+			expected string
+		}{{
+			qemuAudioOpts{qemuDevOpts{"pci", "qemu_pcie0", "00.6", false}, true},
+			`# Sound device
+			[audiodev "qemu_sound-audiodev"]
+			driver = "spice"
+
+			[device "qemu_sound"]
+			addr = "00.6"
+			audiodev = "qemu_sound-audiodev"
+			bus = "qemu_pcie0"
+			driver = "virtio-sound-pci"`,
+		}, {
+			qemuAudioOpts{qemuDevOpts{"pci", "qemu_pcie0", "00.6", false}, false},
+			`# Sound device
+			[audiodev "qemu_sound-audiodev"]
+			driver = "none"
+
+			[device "qemu_sound"]
+			addr = "00.6"
+			audiodev = "qemu_sound-audiodev"
+			bus = "qemu_pcie0"
+			driver = "virtio-sound-pci"`,
+		}}
+		for _, tc := range testCases {
+			runTest(tc.expected, qemuAudio(&tc.opts))
+		}
+	})
+
 	t.Run("qemu_tpm", func(t *testing.T) {
 		testCases := []struct {
 			opts     qemuTPMOpts
